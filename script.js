@@ -1,81 +1,49 @@
-async function getGoogleSuggestions(query){
-    const url = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`
-    const r = await fetch(url)
-    const data = await r.json()
-    return data[1]
-}
-
-async function getYouTubeSuggestions(query){
-    const url = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(query)}`
-    const r = await fetch(url)
-    const data = await r.json()
-    return data[1]
-}
-
-function scoreKeyword(word){
-
-    let yt = 3 + Math.floor(Math.random()*5)
-    let tt = 3 + Math.floor(Math.random()*5)
-    let relevance = 5 + Math.floor(Math.random()*5)
-
-    const text = word.toLowerCase()
-
-    if(text.includes("how") || text.includes("tutorial")){
-        yt += 3
+async function fetchSuggestions(url) {
+    try {
+        const proxy = "https://api.allorigins.win/raw?url=";
+        const response = await fetch(proxy + encodeURIComponent(url));
+        const data = await response.json();
+        return data[1];
+    } catch (e) {
+        console.error("Error:", e);
+        return [];
     }
-
-    if(text.includes("review")){
-        yt += 2
-    }
-
-    if(text.includes("trend") || text.includes("viral")){
-        tt += 3
-    }
-
-    if(text.includes("challenge")){
-        tt += 3
-    }
-
-    if(text.includes("short")){
-        tt += 2
-    }
-
-    yt = Math.min(10, yt)
-    tt = Math.min(10, tt)
-
-    return {relevance, yt, tt}
-}
-
-function addRow(keyword, scores){
-
-    const table = document.querySelector("#results tbody")
-
-    const row = document.createElement("tr")
-
-    row.innerHTML = `
-        <td>${keyword}</td>
-        <td>${scores.relevance} / 10</td>
-        <td>${scores.yt} / 10</td>
-        <td>${scores.tt} / 10</td>
-    `
-
-    table.appendChild(row)
 }
 
 async function search(){
 
-    const query = document.getElementById("query").value
+    const query = document.getElementById("query").value;
 
-    const table = document.querySelector("#results tbody")
-    table.innerHTML = ""
+    if(!query) return;
 
-    const google = await getGoogleSuggestions(query)
-    const youtube = await getYouTubeSuggestions(query)
+    const table = document.querySelector("#results tbody");
+    table.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
 
-    const allKeywords = [...new Set([...google, ...youtube])]
+    const googleURL = `https://suggestqueries.google.com/complete/search?client=firefox&q=${query}`;
+    const youtubeURL = `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${query}`;
+
+    const google = await fetchSuggestions(googleURL);
+    const youtube = await fetchSuggestions(youtubeURL);
+
+    const allKeywords = [...new Set([...google, ...youtube])];
+
+    table.innerHTML = "";
 
     allKeywords.forEach(k => {
-        const scores = scoreKeyword(k)
-        addRow(k, scores)
-    })
+
+        let yt = Math.floor(Math.random()*10)+1;
+        let tt = Math.floor(Math.random()*10)+1;
+        let relevance = Math.floor(Math.random()*10)+1;
+
+        const row = `
+            <tr>
+                <td>${k}</td>
+                <td>${relevance}/10</td>
+                <td>${yt}/10</td>
+                <td>${tt}/10</td>
+            </tr>
+        `;
+
+        table.innerHTML += row;
+    });
 }
